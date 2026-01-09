@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linux DO 自动浏览</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 状态标签 -->
+    <div class="status-badge" id="statusBadge">
+      <span class="status-dot"></span>
+      <span class="status-text">未运行</span>
+    </div>
+
+    <!-- 主标题 -->
+    <h1 class="title">自动浏览</h1>
+
+    <!-- 副标题/统计 -->
+    <p class="subtitle">已浏览 <strong id="browsedCount">0</strong> 个帖子 · 运行 <strong id="runTime">00:00</strong></p>
+
+    <!-- 主控制按钮 -->
+    <div class="main-actions">
+      <button id="startBtn" class="btn-primary">
+        继续浏览
+      </button>
+      <button id="stopBtn" class="btn-secondary" disabled>
+        停止
+      </button>
+    </div>
+
+    <!-- 次要操作 -->
+    <div class="secondary-actions">
+      <button id="resetBtn" class="btn-text">
+        重置并重新开始
+      </button>
+      <span class="divider">·</span>
+      <button id="clearHistoryBtn" class="btn-text">
+        清空历史
+      </button>
+    </div>
+
+    <!-- 设置面板 -->
+    <details class="settings" id="settingsPanel">
+      <summary>浏览设置</summary>
+      <div class="settings-grid">
+        <div class="setting-item">
+          <label>停留时间</label>
+          <div class="input-group">
+            <input type="number" id="minPageStay" value="5" min="1" max="60">
+            <span>-</span>
+            <input type="number" id="maxPageStay" value="15" min="2" max="120">
+            <span class="unit">秒</span>
+          </div>
+        </div>
+        <div class="setting-item">
+          <label>滚动深度</label>
+          <div class="input-group">
+            <input type="number" id="readDepth" value="0.7" min="0.1" max="1" step="0.1">
+            <span class="unit">比例</span>
+          </div>
+        </div>
+        <div class="setting-item">
+          <label>点击概率</label>
+          <div class="input-group">
+            <input type="number" id="clickProbability" value="0.6" min="0" max="1" step="0.1">
+          </div>
+        </div>
+      </div>
+      <button id="applySettings" class="btn-apply">应用设置</button>
+    </details>
+
+    <!-- 日志区域 -->
+    <div class="logs-section">
+      <div class="logs-header">
+        <span>活动日志</span>
+        <button id="clearLogs" class="btn-clear">清空</button>
+      </div>
+      <div class="logs-content" id="logsContent">
+        <div class="log-empty">暂无日志</div>
+      </div>
+    </div>
+
+    <!-- 底部链接 -->
+    <div class="footer-links">
+      <a href="https://linux.do" target="_blank">LINUX DO</a>
+      <span>·</span>
+      <a href="#" id="openLatest">最新帖子</a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
