@@ -11,6 +11,8 @@ class HumanBrowser {
       maxScrollDelay: 3000,
       minPageStay: 5000,
       maxPageStay: 15000,
+      minCommentRead: 1000,
+      maxCommentRead: 4000,
       readDepth: 0.7,
       mouseMoveProbability: 0.3,
       clickProbability: 0.6
@@ -62,6 +64,12 @@ class HumanBrowser {
     this.state = state;
     this.config = state.config || this.config;
 
+    console.log('[Linux DO Auto] 状态加载完成', {
+      isRunning: state.isRunning,
+      isPostPage: this.isPostPage(),
+      isListPage: this.isListPage()
+    });
+
     // 如果正在运行，根据当前页面类型继续执行
     if (state.isRunning) {
       console.log('[Linux DO Auto] 检测到正在运行，继续执行');
@@ -74,11 +82,13 @@ class HumanBrowser {
     }
 
     this.sendMessage({ type: 'ready', url: this.currentUrl });
+    console.log('[Linux DO Auto] 初始化完成，等待指令');
   }
 
   // 判断是否是帖子页面
   isPostPage() {
-    return window.location.pathname.match(/^\/t\/topic\/\d+$/);
+    // 匹配 /t/topic/数字 或 /t/topic/数字/数字 格式
+    return window.location.pathname.match(/^\/t\/topic\/\d+(\/\d+)?$/);
   }
 
   // 判断是否是列表页面
@@ -148,6 +158,100 @@ class HumanBrowser {
     return Array.from(links);
   }
 
+  // 获取帖子内所有评论
+  getPostComments() {
+    // linux.do 使用 data-post-number 属性标识每个评论
+    const comments = document.querySelectorAll('[data-post-number]');
+    return Array.from(comments);
+  }
+
+  // 逐个浏览评论（模拟人类阅读），支持动态加载
+  async browseCommentsSlowly() {
+    let lastCommentCount = 0;
+    let noNewCommentsCount = 0;
+    const maxNoNewComments = 3; // 连续3次没有新评论才停止
+
+    while (noNewCommentsCount < maxNoNewComments) {
+      // 检查是否已停止
+      if (!this.state.isRunning) {
+        this.sendMessage({ type: 'log', message: '浏览已停止' });
+        return;
+      }
+
+      // 每次循环都重新获取评论（处理动态加载）
+      const comments = this.getPostComments();
+      const currentCount = comments.length;
+
+      if (currentCount > lastCommentCount) {
+        // 有新评论加载
+        this.sendMessage({ type: 'log', message: `发现新评论，总计 ${currentCount} 条` });
+        lastCommentCount = currentCount;
+        noNewCommentsCount = 0;
+
+        // 从上次浏览的位置继续
+        const startIndex = this.state.lastCommentIndex || 0;
+
+        for (let i = startIndex; i < comments.length; i++) {
+          // 检查是否已停止
+          if (!this.state.isRunning) {
+            this.sendMessage({ type: 'log', message: '浏览已停止' });
+            return;
+          }
+
+          const comment = comments[i];
+          const postNumber = comment.getAttribute('data-post-number');
+
+          // 滚动到评论位置
+          comment.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          await this.sleep(500); // 等待滚动完成
+
+          // 使用配置的阅读时间范围
+          const readTime = this.random(this.config.minCommentRead, this.config.maxCommentRead);
+
+          this.sendMessage({ type: 'log', message: `阅读评论 ${postNumber}/${currentCount}` });
+          await this.sleep(readTime);
+
+          // 偶尔移动鼠标
+          if (Math.random() < this.config.mouseMoveProbability) {
+            this.randomMouseMove();
+          }
+
+          // 保存当前浏览位置
+          this.state.lastCommentIndex = i + 1;
+        }
+
+        // 浏览完当前所有评论后，尝试加载更多
+        this.sendMessage({ type: 'log', message: '尝试加载更多评论...' });
+
+        // 滚动到页面底部触发加载
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth'
+        });
+
+        // 等待可能的动态加载
+        await this.sleep(3000);
+
+      } else {
+        // 没有新评论
+        noNewCommentsCount++;
+        this.sendMessage({ type: 'log', message: `等待新评论... (${noNewCommentsCount}/${maxNoNewComments})` });
+
+        // 再次滚动到底部尝试触发加载
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth'
+        });
+
+        await this.sleep(3000);
+      }
+    }
+
+    // 重置浏览位置
+    this.state.lastCommentIndex = 0;
+    this.sendMessage({ type: 'log', message: '所有评论已浏览完毕' });
+  }
+
   // 处理帖子页面
   async handlePostPage() {
     const postUrl = window.location.pathname;
@@ -157,7 +261,9 @@ class HumanBrowser {
     // 检查是否已浏览
     if (this.state.browsedPosts.includes(postUrl)) {
       this.sendMessage({ type: 'log', message: '已浏览过，返回列表' });
-      this.navigateToLatest();
+      if (this.state.isRunning) {
+        this.navigateToLatest();
+      }
       return;
     }
 
@@ -173,14 +279,26 @@ class HumanBrowser {
     // 随机鼠标移动
     this.randomMouseMove();
 
-    // 人类化滚动阅读
-    await this.humanScroll();
+    // 逐个浏览评论（模拟人类阅读）
+    await this.browseCommentsSlowly();
+
+    // 检查是否还在运行
+    if (!this.state.isRunning) {
+      this.sendMessage({ type: 'log', message: '已停止，不跳转' });
+      return;
+    }
 
     // 停留阅读时间
     const stayTime = this.random(this.config.minPageStay, this.config.maxPageStay);
     this.sendMessage({ type: 'log', message: `停留阅读 ${Math.floor(stayTime / 1000)}秒` });
 
     await this.sleep(stayTime);
+
+    // 再次检查是否还在运行
+    if (!this.state.isRunning) {
+      this.sendMessage({ type: 'log', message: '已停止，不跳转' });
+      return;
+    }
 
     // 更新统计
     this.sendMessage({
@@ -196,7 +314,9 @@ class HumanBrowser {
 
     // 返回列表
     this.sendMessage({ type: 'log', message: '返回列表继续' });
-    this.navigateToLatest();
+    if (this.state.isRunning) {
+      this.navigateToLatest();
+    }
   }
 
   // 处理列表页面
@@ -210,35 +330,34 @@ class HumanBrowser {
     const unbrowsed = posts.filter(url => !this.state.browsedPosts.includes(url));
 
     if (unbrowsed.length === 0) {
-      this.sendMessage({ type: 'log', message: '所有帖子已浏览，等待30秒后刷新...' });
+      this.sendMessage({ type: 'log', message: '当前页所有帖子已浏览，等待60秒后刷新...' });
 
-      // 等待30秒
-      await this.sleep(30000);
+      // 等待60秒（给服务器喘息时间）
+      for (let i = 0; i < 60; i++) {
+        if (!this.state.isRunning) {
+          this.sendMessage({ type: 'log', message: '已停止，不刷新' });
+          return;
+        }
+        await this.sleep(1000);
+      }
 
-      // 刷新页面
-      location.reload();
+      // 刷新页面继续
+      this.sendMessage({ type: 'log', message: '刷新页面获取新内容' });
+      if (this.state.isRunning) {
+        location.reload();
+      }
       return;
     }
 
-    // 随机选择下一个帖子（从前10个中随机）
-    const maxIndex = Math.min(unbrowsed.length - 1, 9);
-    const nextIndex = this.random(0, maxIndex);
-    const nextPost = unbrowsed[nextIndex];
+    // 按顺序选择下一个未浏览帖子（更稳定）
+    const nextPost = unbrowsed[0];
 
-    // 随机决定是否跳过
-    if (Math.random() > this.config.clickProbability) {
-      this.sendMessage({ type: 'log', message: '随机跳过，重新选择' });
-      await this.sleep(this.random(1000, 2000));
+    this.sendMessage({ type: 'log', message: `跳转到: ${nextPost} (剩余 ${unbrowsed.length - 1} 个)` });
+    await this.sleep(this.random(1000, 2000));
 
-      // 重新选择
-      const newIndex = this.random(0, Math.min(unbrowsed.length - 1, 9));
-      const finalPost = unbrowsed[newIndex];
-      this.navigateToPost(finalPost);
-      return;
+    if (this.state.isRunning) {
+      this.navigateToPost(nextPost);
     }
-
-    this.sendMessage({ type: 'log', message: `跳转到: ${nextPost}` });
-    this.navigateToPost(nextPost);
   }
 
   navigateToPost(url) {
@@ -305,6 +424,7 @@ class HumanBrowser {
     await this.saveState(this.state);
 
     this.sendMessage({ type: 'stopped' });
+    console.log('[Linux DO Auto] 停止完成');
   }
 
   // 更新配置

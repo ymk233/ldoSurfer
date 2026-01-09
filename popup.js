@@ -91,13 +91,8 @@ class PopupController {
       return;
     }
 
-    // 发送启动消息到 content script
-    chrome.tabs.sendMessage(tab.id, { action: 'start' }, (response) => {
-      if (chrome.runtime.lastError) {
-        this.log('请刷新页面后重试', 'error');
-        return;
-      }
-
+    // 发送启动消息到 content script，带重试
+    this.sendMessageWithRetry(tab.id, { action: 'start' }, (response) => {
       if (response?.success) {
         this.isRunning = true;
         this.updateStatus();
@@ -106,10 +101,28 @@ class PopupController {
     });
   }
 
+  // 带重试的消息发送
+  sendMessageWithRetry(tabId, message, callback, retries = 3) {
+    chrome.tabs.sendMessage(tabId, message, (response) => {
+      if (chrome.runtime.lastError) {
+        if (retries > 0) {
+          // 等待后重试
+          setTimeout(() => {
+            this.sendMessageWithRetry(tabId, message, callback, retries - 1);
+          }, 500);
+        } else {
+          this.log('请刷新页面后重试', 'error');
+        }
+        return;
+      }
+      if (callback) callback(response);
+    });
+  }
+
   async stop() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    chrome.tabs.sendMessage(tab.id, { action: 'stop' }, (response) => {
+    this.sendMessageWithRetry(tab.id, { action: 'stop' }, (response) => {
       if (response?.success) {
         this.isRunning = false;
         this.updateStatus();
@@ -126,12 +139,7 @@ class PopupController {
       return;
     }
 
-    chrome.tabs.sendMessage(tab.id, { action: 'resetAndStart' }, (response) => {
-      if (chrome.runtime.lastError) {
-        this.log('请刷新页面后重试', 'error');
-        return;
-      }
-
+    this.sendMessageWithRetry(tab.id, { action: 'resetAndStart' }, (response) => {
       if (response?.success) {
         this.isRunning = true;
         this.stats.totalBrowsed = 0;
@@ -145,7 +153,7 @@ class PopupController {
   async clearHistory() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    chrome.tabs.sendMessage(tab.id, { action: 'resetHistory' }, (response) => {
+    this.sendMessageWithRetry(tab.id, { action: 'resetHistory' }, (response) => {
       if (response?.success) {
         this.stats.totalBrowsed = 0;
         this.updateStats();
@@ -156,21 +164,29 @@ class PopupController {
 
   async applySettings() {
     // 输入值是秒，转换为毫秒
+    const minCommentRead = parseFloat(document.getElementById('minCommentRead').value) * 1000;
+    const maxCommentRead = parseFloat(document.getElementById('maxCommentRead').value) * 1000;
     const minPageStay = parseInt(document.getElementById('minPageStay').value) * 1000;
     const maxPageStay = parseInt(document.getElementById('maxPageStay').value) * 1000;
 
     const newConfig = {
       minScrollDelay: 800,
       maxScrollDelay: 3000,
+      minCommentRead: minCommentRead,
+      maxCommentRead: maxCommentRead,
       minPageStay: minPageStay,
       maxPageStay: maxPageStay,
-      readDepth: parseFloat(document.getElementById('readDepth').value),
+      readDepth: 0.7,
       clickProbability: parseFloat(document.getElementById('clickProbability').value)
     };
 
     // 验证设置
+    if (newConfig.minCommentRead >= newConfig.maxCommentRead) {
+      this.log('最小评论阅读时间必须小于最大评论阅读时间', 'error');
+      return;
+    }
     if (newConfig.minPageStay >= newConfig.maxPageStay) {
-      this.log('最小停留时间必须小于最大停留时间', 'error');
+      this.log('最小页面停留时间必须小于最大页面停留时间', 'error');
       return;
     }
 
@@ -284,9 +300,10 @@ class PopupController {
         this.config = result.linuxDoConfig;
 
         // 更新 UI（转换为秒显示）
+        document.getElementById('minCommentRead').value = (this.config.minCommentRead || 1000) / 1000;
+        document.getElementById('maxCommentRead').value = (this.config.maxCommentRead || 4000) / 1000;
         document.getElementById('minPageStay').value = Math.floor(this.config.minPageStay / 1000);
         document.getElementById('maxPageStay').value = Math.floor(this.config.maxPageStay / 1000);
-        document.getElementById('readDepth').value = this.config.readDepth;
         document.getElementById('clickProbability').value = this.config.clickProbability;
       }
     });
