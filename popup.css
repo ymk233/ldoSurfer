@@ -22,6 +22,15 @@
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 14px;
+
+  /* 温馨模式配色 */
+  --cozy-bg: #f8f2e8;
+  --cozy-bg-hover: #f0eee9;
+  --cozy-border: #e0d8cd;
+  --cozy-text: #635d53;
+  --cozy-muted: #7a7368;
+  --cozy-radius: 12px;
+  --cozy-font: 'Nunito', 'Quicksand', 'Segoe UI Rounded', system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,6 +47,13 @@
     --surface-hover: #2a2a2a;
     --surface-hover-active: #333333;
     --surface-secondary: #222222;
+
+    /* 温馨模式配色 - 深色版 */
+    --cozy-bg: #2d2a26;
+    --cozy-bg-hover: #363330;
+    --cozy-border: #4a4540;
+    --cozy-text: #c4b6a3;
+    --cozy-muted: #9a8f86;
   }
 }
 
@@ -101,16 +117,6 @@ body {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
-}
-
-/* 标题 */
-.title {
-  font-size: 22px;
-  font-weight: 700;
-  text-align: center;
-  line-height: 1.2;
-  margin-bottom: 8px;
-  letter-spacing: -0.02em;
 }
 
 /* 副标题 */
@@ -457,7 +463,7 @@ body {
   align-items: center;
   gap: 8px;
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: 8px;
 }
 
 .footer-links a {
@@ -478,4 +484,292 @@ body {
 
 .footer-links span {
   color: var(--text-muted);
+}
+
+/* ==================== 温馨模式 ==================== */
+
+/* 温馨模式开关区域 */
+.cozy-toggle {
+  width: 100%;
+  margin: 6px auto 6px;
+  display: flex;
+  justify-content: center;
+}
+
+.cozy-toggle .switch-label {
+  width: auto;
+}
+
+.cozy-toggle .switch-text {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+/* 温馨模式激活状态 */
+body.cozy-mode {
+  background: #fdfbf6;
+  color: var(--cozy-text);
+  font-family: var(--cozy-font);
+}
+
+/* 容器装饰 - 小花 */
+body.cozy-mode .container {
+  position: relative;
+}
+
+body.cozy-mode .container::before,
+body.cozy-mode .container::after {
+  content: "";
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' fill='%23f7d7dd' fill-opacity='0.2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 10c4 8 6 12 12 14s12 0 18-4c-2 8-4 14-2 20s6 10 12 14c-8 0-14-2-20 2s-8 8-10 16c-4-6-6-12-12-14s-12 0-20 4c2-6 6-10 6-16s-4-12-10-18c8 2 14 2 20-2s8-8 6-16z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.2;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.cozy-mode .container::before {
+  top: 8px;
+  left: 8px;
+}
+
+body.cozy-mode .container::after {
+  bottom: 60px;
+  right: 8px;
+}
+
+/* 清空历史按钮 hover 样式 */
+body.cozy-mode #clearHistoryBtn {
+  color: var(--cozy-text);
+  border-radius: var(--cozy-radius);
+  padding: 6px 10px;
+  transition: all 0.2s ease;
+}
+
+body.cozy-mode #clearHistoryBtn:hover {
+  background: var(--cozy-bg-hover);
+}
+
+/* 设置面板 - 齿轮图标 */
+body.cozy-mode .settings summary {
+  background: var(--cozy-bg);
+  color: var(--cozy-text);
+  border: 1px solid var(--cozy-border);
+  border-radius: var(--cozy-radius);
+  position: relative;
+  padding-left: 28px;
+  padding-right: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.cozy-mode .settings summary::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translateY(-50%);
+  background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23635d53' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z'/%3E%3Cpath d='M8 1.5v1.6M8 12.9v1.6M3.1 3.1l1.1 1.1M11.8 11.8l1.1 1.1M1.5 8h1.6M12.9 8h1.6M3.1 12.9l1.1-1.1M11.8 4.2l1.1-1.1'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.6;
+}
+
+body.cozy-mode .settings summary:hover {
+  background: var(--cozy-bg-hover);
+}
+
+/* 应用设置按钮 */
+body.cozy-mode .btn-apply {
+  background: var(--cozy-bg);
+  color: var(--cozy-text);
+  border: 1px solid var(--cozy-border);
+  border-radius: var(--cozy-radius);
+}
+
+body.cozy-mode .btn-apply:hover {
+  background: var(--cozy-bg-hover);
+}
+
+/* 活动日志区域 */
+body.cozy-mode .logs-section {
+  background: var(--cozy-bg);
+  border: 1px dashed var(--cozy-border);
+  border-radius: var(--cozy-radius);
+}
+
+body.cozy-mode .logs-header,
+body.cozy-mode .logs-content {
+  background: transparent;
+}
+
+body.cozy-mode .logs-header {
+  border-bottom-color: var(--cozy-border);
+}
+
+body.cozy-mode .logs-header span {
+  color: var(--cozy-text);
+}
+
+/* 暂无日志文字 */
+body.cozy-mode .log-empty {
+  color: var(--cozy-muted);
+}
+
+body.cozy-mode .log-empty-text {
+  color: var(--cozy-muted);
+}
+
+/* 小松鼠插画 */
+.log-illustration {
+  display: none;
+}
+
+body.cozy-mode .log-illustration {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+body.cozy-mode .log-illustration svg {
+  width: 100px;
+  height: auto;
+}
+
+/* 底部链接按钮 */
+body.cozy-mode .footer-links a {
+  background: var(--cozy-bg);
+  color: var(--cozy-text);
+  border: 1px solid var(--cozy-border);
+  border-radius: var(--cozy-radius);
+}
+
+body.cozy-mode .footer-links a:hover {
+  background: var(--cozy-bg-hover);
+  color: var(--cozy-text);
+}
+
+/* 温馨模式开关文字颜色 */
+body.cozy-mode .cozy-toggle .switch-text {
+  color: var(--cozy-text);
+}
+
+/* 其他文字颜色适配 */
+body.cozy-mode .subtitle {
+  color: var(--cozy-muted);
+}
+
+body.cozy-mode .subtitle strong {
+  color: var(--cozy-text);
+}
+
+body.cozy-mode .status-badge {
+  border-color: var(--cozy-border);
+  color: var(--cozy-text);
+}
+
+body.cozy-mode .status-text {
+  color: var(--cozy-text);
+}
+
+body.cozy-mode .setting-item label {
+  color: var(--cozy-text);
+}
+
+body.cozy-mode .input-group input {
+  border-color: var(--cozy-border);
+  background: #fff;
+  color: var(--cozy-text);
+}
+
+body.cozy-mode .input-group input:focus {
+  border-color: var(--cozy-text);
+}
+
+body.cozy-mode .input-group span,
+body.cozy-mode .unit {
+  color: var(--cozy-muted);
+}
+
+body.cozy-mode .btn-text {
+  color: var(--cozy-muted);
+}
+
+body.cozy-mode .btn-text:hover {
+  color: var(--cozy-text);
+}
+
+body.cozy-mode .divider {
+  color: var(--cozy-muted);
+}
+
+body.cozy-mode .log-time {
+  color: var(--cozy-muted);
+}
+
+body.cozy-mode .log-info .log-message,
+body.cozy-mode .log-success .log-message,
+body.cozy-mode .log-warning .log-message,
+body.cozy-mode .log-error .log-message {
+  color: var(--cozy-text);
+}
+
+body.cozy-mode .footer-links span {
+  color: var(--cozy-muted);
+}
+
+/* 主操作按钮温馨模式适配 */
+body.cozy-mode .btn-primary {
+  background: var(--cozy-text);
+  color: #fff;
+}
+
+body.cozy-mode .btn-primary:hover:not(:disabled) {
+  background: var(--cozy-muted);
+}
+
+body.cozy-mode .btn-secondary {
+  background: var(--cozy-bg);
+  color: var(--cozy-text);
+  border-color: var(--cozy-border);
+}
+
+body.cozy-mode .btn-secondary:hover:not(:disabled) {
+  background: var(--cozy-bg-hover);
+}
+
+/* 状态标签温馨模式适配 */
+body.cozy-mode .status-badge.running {
+  background: var(--cozy-bg);
+}
+
+/* 禁用状态适配 */
+body.cozy-mode .btn-primary:disabled {
+  opacity: 0.4;
+}
+
+body.cozy-mode .btn-secondary:disabled {
+  opacity: 0.4;
+}
+
+/* ==================== 温馨模式 - 深色模式适配 ==================== */
+@media (prefers-color-scheme: dark) {
+  /* 深色模式背景 */
+  body.cozy-mode {
+    background: #1a1816;
+  }
+
+  /* 齿轮图标深色版 */
+  body.cozy-mode .settings summary::before {
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23c4b6a3' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z'/%3E%3Cpath d='M8 1.5v1.6M8 12.9v1.6M3.1 3.1l1.1 1.1M11.8 11.8l1.1 1.1M1.5 8h1.6M12.9 8h1.6M3.1 12.9l1.1-1.1M11.8 4.2l1.1-1.1'/%3E%3C/svg%3E");
+  }
 }

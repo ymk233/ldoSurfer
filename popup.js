@@ -12,6 +12,7 @@ class PopupController {
     this.accumulatedTime = 0; // 累积运行时间（毫秒）
     this.lastStartTime = null; // 最后一次开始时间
     this.logs = [];
+    this.cozyMode = false; // 温馨模式状态
     this.config = {
       minScrollDelay: 800,
       maxScrollDelay: 3000,
@@ -83,6 +84,16 @@ class PopupController {
       e.preventDefault();
       chrome.tabs.create({ url: 'https://linux.do/latest' });
     });
+    // 温馨模式开关
+    document.getElementById('cozyModeToggle').addEventListener('change', (e) => this.setCozyMode(e.target.checked));
+  }
+
+  // 设置温馨模式
+  setCozyMode(enabled) {
+    this.cozyMode = enabled;
+    document.body.classList.toggle('cozy-mode', enabled);
+    chrome.storage.local.set({ linuxDoCozyMode: enabled });
+    this.renderLogs(); // 重新渲染日志以显示/隐藏插画
   }
 
   async start() {
@@ -284,7 +295,12 @@ class PopupController {
     const logsContent = document.getElementById('logsContent');
 
     if (this.logs.length === 0) {
-      logsContent.innerHTML = '<div class="log-empty">暂无日志</div>';
+      logsContent.innerHTML = `
+        <div class="log-empty">
+          <div class="log-empty-text">暂无日志</div>
+          <div class="log-illustration" aria-hidden="true">${this.getSquirrelSvg()}</div>
+        </div>
+      `;
       return;
     }
 
@@ -294,6 +310,21 @@ class PopupController {
         <span class="log-message">${log.message}</span>
       </div>
     `).join('');
+  }
+
+  // 获取小松鼠 SVG
+  getSquirrelSvg() {
+    return `<svg width="100" height="65" viewBox="0 0 140 90" fill="none" stroke="#c4b6a3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M78 22c12 4 24 12 27 22 3 9-2 22-16 22-14 0-26-11-26-24 0-10 7-18 15-20z"/>
+      <path d="M60 42c-10 2-20 12-20 24 0 12 10 20 24 20 10 0 18-6 18-14"/>
+      <path d="M86 32c6-4 10-10 10-16 0-6-4-11-10-11-6 0-10 5-10 11"/>
+      <path d="M54 54c-4 0-8 4-8 8 0 4 4 8 8 8h6"/>
+      <path d="M102 46c6-2 10-6 10-11 0-7-6-12-14-12"/>
+      <path d="M52 72c2 4 8 8 12 10"/>
+      <circle cx="86" cy="23" r="1.5" fill="#c4b6a3" stroke="none"/>
+      <path d="M90 58c-2 3-7 5-12 5"/>
+      <path d="M66 36c-2-6-10-10-18-10-6 0-12 2-16 6"/>
+    </svg>`;
   }
 
   clearLogs() {
@@ -341,7 +372,7 @@ class PopupController {
   }
 
   loadSettings() {
-    chrome.storage.local.get(['linuxDoConfig'], (result) => {
+    chrome.storage.local.get(['linuxDoConfig', 'linuxDoCozyMode'], (result) => {
       if (result.linuxDoConfig) {
         this.config = result.linuxDoConfig;
 
@@ -359,6 +390,11 @@ class PopupController {
         document.getElementById('clickProbability').value = this.config.clickProbability;
         document.getElementById('quickMode').checked = this.config.quickMode || false;
       }
+
+      // 加载温馨模式状态
+      const cozyMode = Boolean(result.linuxDoCozyMode);
+      document.getElementById('cozyModeToggle').checked = cozyMode;
+      this.setCozyMode(cozyMode);
     });
   }
 }
