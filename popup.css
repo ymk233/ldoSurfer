@@ -16,9 +16,29 @@
   --accent-color: #000000;
   --success-color: #22c55e;
   --danger-color: #000000;
+  --surface-hover: #F5F5F5;
+  --surface-hover-active: #E8E8E8;
+  --surface-secondary: #FAFAFA;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #1a1a1a;
+    --text-primary: #e8e8e8;
+    --text-secondary: #a0a0a0;
+    --text-muted: #666666;
+    --border-color: #333333;
+    --border-light: #2a2a2a;
+    --accent-color: #e8e8e8;
+    --success-color: #22c55e;
+    --danger-color: #e8e8e8;
+    --surface-hover: #2a2a2a;
+    --surface-hover-active: #333333;
+    --surface-secondary: #222222;
+  }
 }
 
 body {
@@ -70,7 +90,7 @@ body {
 }
 
 .status-badge.running {
-  background: #F5F5F5;
+  background: var(--surface-hover);
 }
 
 .status-badge.running .status-dot {
@@ -144,13 +164,13 @@ body {
 }
 
 .btn-secondary {
-  background: #F5F5F5;
+  background: var(--surface-hover);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #E8E8E8;
+  background: var(--surface-hover-active);
 }
 
 .btn-secondary:disabled {
@@ -207,7 +227,7 @@ body {
 }
 
 .settings summary:hover {
-  background: #FAFAFA;
+  background: var(--surface-secondary);
 }
 
 .settings summary::-webkit-details-marker {
@@ -248,6 +268,8 @@ body {
   padding: 4px 6px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
+  background: var(--bg-color);
+  color: var(--text-primary);
   font-size: 10px;
   text-align: center;
   font-family: inherit;
@@ -358,7 +380,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: #FAFAFA;
+  background: var(--surface-secondary);
   border-bottom: 1px solid var(--border-light);
 }
 
@@ -450,7 +472,7 @@ body {
 }
 
 .footer-links a:hover {
-  background: #F5F5F5;
+  background: var(--surface-hover);
   color: var(--text-primary);
 }
 
