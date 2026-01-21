@@ -1,5 +1,93 @@
 // Linux DO 自动浏览 - Popup Script (极简风格)
 
+const AVAILABLE_THEMES = [
+  { id: 'system', name: '跟随系统' },
+  { id: 'healing', name: '治愈' },
+  { id: 'newyear', name: '新年' }
+];
+
+class ThemeManager {
+  constructor() {
+    this.storageKey = 'linuxDoTheme';
+    this.themes = AVAILABLE_THEMES;
+    this.currentThemeId = 'system';
+    this.panelEl = null;
+    this.openEl = null;
+    this.closeEl = null;
+  }
+
+  init() {
+    this.panelEl = document.getElementById('themePanel');
+    this.openEl = document.getElementById('openThemePanel');
+    this.closeEl = document.getElementById('closeThemePanel');
+    if (!this.panelEl || !this.openEl || !this.closeEl) return;
+    this.bindEvents();
+    this.loadStoredTheme();
+  }
+
+  loadStoredTheme() {
+    chrome.storage.local.get([this.storageKey], (result) => {
+      const storedId = result[this.storageKey];
+      this.setTheme(this.isSupported(storedId) ? storedId : 'system', false);
+    });
+  }
+
+  bindEvents() {
+    this.openEl.addEventListener('click', () => this.openPanel());
+    this.closeEl.addEventListener('click', () => this.closePanel());
+
+    this.panelEl.addEventListener('click', (event) => {
+      if (event.target.classList.contains('theme-modal__backdrop')) {
+        this.closePanel();
+      }
+    });
+
+    this.panelEl.querySelectorAll('.theme-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const themeId = card.getAttribute('data-theme-id');
+        this.setTheme(themeId);
+        this.closePanel();
+      });
+    });
+  }
+
+  setTheme(themeId, persist = true) {
+    const targetId = this.isSupported(themeId) ? themeId : 'system';
+    if (targetId === 'system') {
+      document.body.removeAttribute('data-theme');
+    } else {
+      document.body.setAttribute('data-theme', targetId);
+    }
+    this.currentThemeId = targetId;
+    this.markActiveCard(targetId);
+    if (persist) {
+      chrome.storage.local.set({ [this.storageKey]: targetId });
+    }
+  }
+
+  isSupported(themeId) {
+    return this.themes.some((theme) => theme.id === themeId);
+  }
+
+  markActiveCard(themeId) {
+    const cards = this.panelEl?.querySelectorAll('.theme-card');
+    if (!cards) return;
+    cards.forEach((card) => {
+      const isActive = card.getAttribute('data-theme-id') === themeId;
+      card.classList.toggle('active', isActive);
+    });
+  }
+
+  openPanel() {
+    this.panelEl?.removeAttribute('hidden');
+    this.markActiveCard(this.currentThemeId);
+  }
+
+  closePanel() {
+    this.panelEl?.setAttribute('hidden', '');
+  }
+}
+
 class PopupController {
   constructor() {
     this.isRunning = false;
@@ -22,10 +110,12 @@ class PopupController {
       quickMode: false
     };
 
+    this.themeManager = new ThemeManager();
     this.init();
   }
 
   init() {
+    this.themeManager.init();
     this.bindEvents();
     this.loadSettings();
     this.startTimer();
